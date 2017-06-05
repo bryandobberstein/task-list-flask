@@ -3,7 +3,7 @@
     <h1>To Do</h1>
     <form method = "post">
       <label for = "new_task">New Task</label>
-      <input type = "text" name = "task" id = "new_task">
+      <input type = "text" name = "task" id = "new_task" autofocus>
       <input type = "submit" value = "Add">
     </form>
     <hr>
@@ -12,7 +12,11 @@
     {% else %}
       <ol>
         {% for item in task %}
-          <li>{{item}}</li>
+          <li>{{item.name}}
+            <form method = "post" action = "/delete_task" style = "display: inline-block;">
+              <input type = "hidden" name = "task_id" value = {{item.id}}>
+              <input type = "submit" value = "Completed">
+          </li>
         {% endfor %}
       </ol>
     {% endif %}
