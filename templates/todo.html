@@ -21,17 +21,20 @@
         {% endfor %}
       </ol>
     {% endif %}
-
     <hr>
-    <h1>Done</h1>
-    <ul>
-      {%for item in complete_tasks%}
-      <li>{{item.name}}
-        <form method = "post" action = "/add_task" style = "display: inline-block;">
-          <input type = "hidden" name = "task_add" value = {{item.id}}>
-          <input type = "submit" value = "Add Back">
-        </form>
-      </li>
-      {%endfor%}
-    </ul>
+    {% if complete_tasks|length == 0 %}
+      <p>Get To Work</p>
+    {% else %}
+      <h1>Done</h1>
+      <ul>
+        {%for item in complete_tasks%}
+        <li>{{item.name}}
+          <form method = "post" action = "/add_task" style = "display: inline-block;">
+            <input type = "hidden" name = "task_add" value = {{item.id}}>
+            <input type = "submit" value = "Add Back">
+          </form>
+        </li>
+        {%endfor%}
+      </ul>
+    {%endif%}
   {% endblock %}
