@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, render_template
+from flask import Flask, flash, request, redirect, render_template, session
 
 from flask_sqlalchemy import SQLAlchemy
 
@@ -7,6 +7,7 @@ app.config["DEBUG"] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://todo:getitdone@localhost:3306/todo'
 app.config['SQLALCHEMY_ECHO'] = True
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.secret_key = "Onn7Opjufsyi"
 
 db = SQLAlchemy(app)
 
@@ -18,6 +19,30 @@ class Task(db.Model):
     def __init__(self, name, completed = False):
         self.name = name
         self.completed = completed
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    email = db.Column(db.String(100), unique = True)
+    password = db.Column(db.String(30))
+
+    def __init__(self, email, password):
+        self.email = email
+        self.password = password
+
+def password_verify(password, verify):
+    if len(password) != len(verify):
+        return False
+    for i in range(len(password)):
+        if password[i] != verify[i]:
+            return False
+
+    return True
+
+@app.before_request
+def require_login():
+    allowed_routes = ["login", "register"]
+    if request.endpoint not in allowed_routes and "email" not in session:
+        return redirect("/login")
 
 @app.route("/", methods = ["GET", "POST"])
 def index():
@@ -52,6 +77,50 @@ def add_task():
     db.session.commit()
 
     return redirect("/")
+
+@app.route("/login", methods = ["GET", "POST"])
+def login():
+    email = ""
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        user = User.query.filter_by(email = email).first()
+        if user and user.password == password:
+            session["email"] = email
+            flash("Login successful", "success")
+            return redirect("/")
+        else:
+            flash("Incorrect email or password", "error")
+
+    return render_template("login.html", title = "Login", email = email)
+
+@app.route("/logout")
+def logout():
+    del session["email"]
+    flash("Logged out", "success")
+    return redirect("/login")
+
+@app.route("/register", methods = ["POST", "GET"])
+def register():
+    email = ""
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        verify = request.form["verify"]
+        user = User.query.filter_by(email = email).first()
+        if user:
+            flash("Email already registered", "error")
+        elif not password_verify(password, verify):
+            flash("Password and verify do not match", "error")
+        else:
+            new_user = User(email, password)
+            db.session.add(new_user)
+            db.session.commit()
+            session["email"] = email
+            flash("Registration successful", "success")
+            return redirect("/")
+
+    return render_template("register.html", title = "Register", email = email)
 
 def main():
     app.run()
