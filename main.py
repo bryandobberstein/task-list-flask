@@ -15,15 +15,18 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(200))
     completed = db.Column(db.Boolean)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
-    def __init__(self, name, completed = False):
+    def __init__(self, name, owner):
         self.name = name
-        self.completed = completed
+        self.completed = False
+        self.owner = owner
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     email = db.Column(db.String(100), unique = True)
     password = db.Column(db.String(30))
+    tasks = db.relationship("Task", backref = "owner")
 
     def __init__(self, email, password):
         self.email = email
@@ -47,14 +50,15 @@ def require_login():
 @app.route("/", methods = ["GET", "POST"])
 def index():
     title = "To Do"
+    owner = User.query.filter_by(email = session["email"]).first()
     if request.method == "POST":
         task_to_add = request.form['task']
         if task_to_add != "":
-            new_task = Task(task_to_add)
+            new_task = Task(task_to_add, owner)
             db.session.add(new_task)
             db.session.commit()
-    tasks = Task.query.filter_by(completed = False).all()
-    complete_tasks = Task.query.filter_by(completed = True).all()
+    tasks = Task.query.filter_by(completed = False, owner = owner).all()
+    complete_tasks = Task.query.filter_by(completed = True, owner = owner).all()
 
     return render_template("todo.html", title = title, task = tasks, complete_tasks = complete_tasks)
 
